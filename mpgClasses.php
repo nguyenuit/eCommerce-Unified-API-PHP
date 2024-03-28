@@ -17,7 +17,7 @@ class mpgGlobals
 					'MONERIS_MPI_FILE' => '/mpi/servlet/MpiServlet',
 					'MONERIS_MPI_2_FILE' => '/mpi2/servlet/MpiServlet',
 					'MONERIS_US_MPI_FILE' => '/mpi/servlet/MpiServlet',
-                  	'API_VERSION'  => 'PHP NA - 1.0.31',
+                  	'API_VERSION'  => 'PHP NA - 1.0.22',
 					'CONNECT_TIMEOUT' => '20',
                   	'CLIENT_TIMEOUT' => '35'
                  	);
@@ -42,7 +42,7 @@ class httpsPost
 	var $clientTimeOut;
 	var $apiVersion;
 	var $response;
-	var $debug = true; //default is false for production release
+	var $debug = false; //default is false for production release
 
 	public function __construct($url, $dataToSend)
 	{
@@ -884,6 +884,12 @@ class mpgResponse
 		return $this->getMpgResponseValue($this->responseData,'PaymentType');
 	}
 
+	//MAC CODE
+	public function getAdviceCode()
+	{
+		return $this->getMpgResponseValue($this->responseData,'AdviceCode');
+	}
+
 	//------------------------------------------------------------------------------------//
 
 	public function getResolveData()
@@ -1686,31 +1692,6 @@ class mpgResponse
 	{
 		return $this->getMpgResponseValue($this->responseData,"ThreeDSVersion");
 	}
-
-	public function getMpiThreeDSAcsTransID()
-	{
-		return $this->getMpgResponseValue($this->responseData,"ThreeDSAcsTransID");
-	}
-
-	public function getMpiThreeDSAuthTimeStamp()
-	{
-		return $this->getMpgResponseValue($this->responseData,"ThreeDSAuthTimeStamp");
-	}
-
-	public function getMpiAuthenticationType()
-	{
-		return $this->getMpgResponseValue($this->responseData,"AuthenticationType");
-	}
-
-	public function getMpiCardholderInfo()
-	{
-		return $this->getMpgResponseValue($this->responseData,"CardholderInfo");
-	}
-
-	public function getMpiTransStatusReason()
-	{
-		return $this->getMpgResponseValue($this->responseData,"TransStatusReason");
-	}
 	
 	public function getMpiInLineForm()
 	{
@@ -1879,17 +1860,7 @@ class mpgResponse
 	{
 		return $this->getMpgResponseValue($this->responseData,"KountInfo");
 	}
-
-	public function getGooglepayPaymentMethod()
-	{
-		return $this->getMpgResponseValue($this->responseData,"GooglepayPaymentMethod");
-	}
-
-	public function getPar()
-	{
-		return $this->getMpgResponseValue($this->responseData,"Par");
-	}
-
+	
 	private function characterHandler($parser,$data)
 	{
 		$this->currentTagValue .= $data;
@@ -2532,12 +2503,6 @@ class mpgRequest
 				'googlepay_mcp_purchase' => array('order_id', 'amount', 'cust_id', 'network', 'payment_token', 'dynamic_descriptor', 'mcp_version', 'mcp_rate_token', 'cardholder_amount', 'cardholder_currency_code'),
 				'googlepay_mcp_preauth' => array('order_id', 'amount', 'cust_id', 'network', 'payment_token', 'dynamic_descriptor', 'final_auth', 'mcp_version', 'mcp_rate_token', 'cardholder_amount', 'cardholder_currency_code'),
 
-                'googlepay_token_purchase' => array('order_id', 'amount', 'cust_id', 'network', 'data_key', 'threeds_server_trans_id', 'ds_trans_id', 'threeds_version', 'cavv', 'dynamic_descriptor'),
-				'googlepay_token_preauth' => array('order_id', 'amount', 'cust_id', 'network', 'data_key', 'threeds_server_trans_id', 'ds_trans_id', 'threeds_version', 'cavv', 'dynamic_descriptor', 'final_auth'),
-				'googlepay_mcp_token_purchase' => array('order_id', 'amount', 'cust_id', 'network', 'data_key', 'threeds_server_trans_id', 'ds_trans_id', 'threeds_version', 'cavv', 'dynamic_descriptor', 'mcp_version', 'mcp_rate_token', 'cardholder_amount', 'cardholder_currency_code'),
-				'googlepay_mcp_token_preauth' => array('order_id', 'amount', 'cust_id', 'network', 'data_key', 'threeds_server_trans_id', 'ds_trans_id', 'threeds_version', 'cavv', 'dynamic_descriptor', 'final_auth', 'mcp_version', 'mcp_rate_token', 'cardholder_amount', 'cardholder_currency_code'),
-
-
  				//OCTPayment transactions
  				'oct_payment' => array('order_id','cust_id', 'amount','pan','expdate', 'crypt_type','dynamic_descriptor'),
  				'res_oct_payment_cc' => array('data_key','order_id','cust_id','amount','crypt_type','dynamic_descriptor'),
@@ -2665,10 +2630,12 @@ class mpgRequest
   		
   		$hostId = "MONERIS".$this->procCountryCode.$this->testMode."_HOST";
   		$pathId = "MONERIS".$this->procCountryCode.$this->isMPI."_FILE";
+  		
   		$url =  $gArray['MONERIS_PROTOCOL']."://".
   				$gArray[$hostId].":".
   				$gArray['MONERIS_PORT'].
   				$gArray[$pathId];
+  		
   		return $url;
 	}
 
@@ -3643,7 +3610,7 @@ class MpiRequest
 				$gArray['MONERIS_PORT'].
 				$gArray[$pathId];
 	
-// 		echo "PostURL: " . $url;
+		//echo "PostURL: " . $url;
 	
 		return $url;
 	}
@@ -6664,86 +6631,6 @@ class GooglePayPreauth extends Transaction
 	}
 }
 
-class GooglePayTokenPreauth extends Transaction
-{
-
-	private $template = array (
-		"order_id" => null,
-		"amount" => null,
-		"crypt_type" => null,
-		"cust_id" => null,
-		"network" => null,
-		"dynamic_descriptor" => null,
-        "data_key" => null,
-        "threeds_server_trans_id" => null,
-        "ds_trans_id" => null,
-        "threeds_version" => null,
-        "cavv" => null
-	);
-
-	public function __construct()
-	{
-		$this->rootTag = "googlepay_token_preauth";
-		$this->data = $this->template;
-	}
-
-	public function setOrderId($order_id)
-	{
-		$this->data["order_id"] = $order_id;
-	}
-
-	public function setAmount($amount)
-	{
-		$this->data["amount"] = $amount;
-	}
-
-	public function setCryptType($crypt_type)
-	{
-		$this->data["crypt_type"] = $crypt_type;
-	}
-
-	public function setCustId($cust_id)
-	{
-		$this->data["cust_id"] = $cust_id;
-	}
-
-	public function setNetwork($network)
-	{
-		$this->data["network"] = $network;
-	}
-
-	public function setDynamicDescriptor($dynamicDescriptor)
-	{
-		$this->data["dynamic_descriptor"] = $dynamicDescriptor;
-	}
-
-	public function setDataKey($dataKey)
-	{
-		$this->data["data_key"] = $dataKey;
-	}
-
-	public function setThreeDSServerTransId($threedsServerTransId)
-	{
-		$this->data["threeds_server_trans_id"] = $threedsServerTransId;
-	}
-
-	public function setDSTransId($dsTransId)
-	{
-		$this->data["ds_trans_id"] = $dsTransId;
-	}
-
-	public function setThreeDSVersion($threedsVersion)
-	{
-		$this->data["threeds_version"] = $threedsVersion;
-	}
-
-	public function setCavv($cavv)
-	{
-		$this->data["cavv"] = $cavv;
-	}
-
-}
-
 class GooglePayMCPPreauth extends Transaction
 {
 	
@@ -6882,86 +6769,6 @@ class GooglePayPurchase extends Transaction
 	}
 }
 
-class GooglePayTokenPurchase extends Transaction
-{
-
-	private $template = array (
-		"order_id" => null,
-		"amount" => null,
-		"crypt_type" => null,
-		"cust_id" => null,
-		"network" => null,
-		"dynamic_descriptor" => null,
-        "data_key" => null,
-        "threeds_server_trans_id" => null,
-        "ds_trans_id" => null,
-        "threeds_version" => null,
-        "cavv" => null
-	);
-
-	public function __construct()
-	{
-		$this->rootTag = "googlepay_token_purchase";
-		$this->data = $this->template;
-	}
-
-	public function setOrderId($order_id)
-	{
-		$this->data["order_id"] = $order_id;
-	}
-
-	public function setAmount($amount)
-	{
-		$this->data["amount"] = $amount;
-	}
-
-	public function setCryptType($crypt_type)
-	{
-		$this->data["crypt_type"] = $crypt_type;
-	}
-
-	public function setCustId($cust_id)
-	{
-		$this->data["cust_id"] = $cust_id;
-	}
-
-	public function setNetwork($network)
-	{
-		$this->data["network"] = $network;
-	}
-
-	public function setDynamicDescriptor($dynamicDescriptor)
-	{
-		$this->data["dynamic_descriptor"] = $dynamicDescriptor;
-	}
-
-	public function setDataKey($dataKey)
-	{
-		$this->data["data_key"] = $dataKey;
-	}
-
-	public function setThreeDSServerTransId($threedsServerTransId)
-	{
-		$this->data["threeds_server_trans_id"] = $threedsServerTransId;
-	}
-
-	public function setDSTransId($dsTransId)
-	{
-		$this->data["ds_trans_id"] = $dsTransId;
-	}
-
-	public function setThreeDSVersion($threedsVersion)
-	{
-		$this->data["threeds_version"] = $threedsVersion;
-	}
-
-	public function setCavv($cavv)
-	{
-		$this->data["cavv"] = $cavv;
-	}
-
-}
-
 class GooglePayMCPPurchase extends Transaction
 {
 	
@@ -6970,11 +6777,7 @@ class GooglePayMCPPurchase extends Transaction
 		"amount" => null,
 		"cust_id" => null,
 		"network" => null,
-        "data_key" => null,
-        "threeds_server_trans_id" => null,
-        "ds_trans_id" => null,
-        "threeds_version" => null,
-        "cavv" => null,
+		"payment_token" => null,
 		"dynamic_descriptor" => null,
 		"mcp_version" => null,
 		"mcp_rate_token" => null,
@@ -6987,7 +6790,7 @@ class GooglePayMCPPurchase extends Transaction
 		$this->rootTag = "googlepay_mcp_purchase";
 		$this->data = $this->template;
 	}
-
+	
 	public function setOrderId($order_id)
 	{
 		$this->data["order_id"] = $order_id;
@@ -7041,108 +6844,6 @@ class GooglePayMCPPurchase extends Transaction
 	public function setCardholderCurrencyCode($cardholder_currency_code)
 	{
 		$this->data["cardholder_currency_code"] = $cardholder_currency_code;
-	}
-}
-
-class GooglePayMCPTokenPurchase extends Transaction
-{
-
-	private $template = array (
-		"order_id" => null,
-		"amount" => null,
-		"cust_id" => null,
-		"network" => null,
-		"payment_token" => null,
-		"dynamic_descriptor" => null,
-		"mcp_version" => null,
-		"mcp_rate_token" => null,
-		"cardholder_amount" => null,
-		"cardholder_currency_code" => null
-	);
-
-	public function __construct()
-	{
-		$this->rootTag = "googlepay_mcp_purchase";
-		$this->data = $this->template;
-	}
-
-	public function setOrderId($order_id)
-	{
-		$this->data["order_id"] = $order_id;
-	}
-
-	public function setAmount($amount)
-	{
-		$this->data["amount"] = $amount;
-	}
-
-	public function setCustId($cust_id)
-	{
-		$this->data["cust_id"] = $cust_id;
-	}
-
-	public function setNetwork($network)
-	{
-		$this->data["network"] = $network;
-	}
-
-	public function setDynamicDescriptor($dynamicDescriptor)
-	{
-		$this->data["dynamic_descriptor"] = $dynamicDescriptor;
-	}
-
-	public function setPaymentToken($signature, $protocol_version, $signed_message)
-	{
-
-		$this->data["payment_token"] = array (
-			"signature" => $signature,
-			"protocol_version" => $protocol_version,
-			"signed_message" => $signed_message
-		);
-	}
-
-	public function setMCPVersion($mcp_version)
-	{
-		$this->data["mcp_version"] = $mcp_version;
-	}
-
-	public function setMCPRateToken($mcp_rate_token)
-	{
-		$this->data["mcp_rate_token"] = $mcp_rate_token;
-	}
-
-	public function setCardholderAmount($cardholder_amount)
-	{
-		$this->data["cardholder_amount"] = $cardholder_amount;
-	}
-
-	public function setCardholderCurrencyCode($cardholder_currency_code)
-	{
-		$this->data["cardholder_currency_code"] = $cardholder_currency_code;
-	}
-}
-
-class GooglePayTokenTempAdd extends Transaction
-{
-
-	private $template = array (
-		"payment_token" => null
-	);
-
-	public function __construct()
-	{
-		$this->rootTag = "googlepay_token_temp_add";
-		$this->data = $this->template;
-	}
-
-	public function setPaymentToken($signature, $protocol_version, $signed_message)
-	{
-
-		$this->data["payment_token"] = array (
-			"signature" => $signature,
-			"protocol_version" => $protocol_version,
-			"signed_message" => $signed_message
-		);
 	}
 }
 
@@ -7213,22 +6914,8 @@ class MpiThreeDSAuthentication extends Transaction {
 		"browser_screen_height" => null,
 		"browser_screen_width" => null,
 		"browser_language" => null,
-		"browser_ip" => null,
 		"email" => null,
-		"request_challenge" => null,
-		"message_category" => null,
-		"device_channel" => null,
-		"decoupled_request_indicator" => null,
-		"decoupled_request_max_time" => null,
-		"decoupled_request_async_url" => null,
-		"ri_indicator" => null,
-		"prior_authentication_info" => null,
-		"recurring_expiry" => null,
-        "recurring_frequency" => null,
-        "work_phone" => null,
-        "mobile_phone" => null,
-        "home_phone" => null
-
+		"request_challenge" => null
 	);
 	
 	public function __construct()
@@ -7372,11 +7059,6 @@ class MpiThreeDSAuthentication extends Transaction {
 	{
 		$this->data["browser_language"] = $browser_language;
 	}
-
-	public function setBrowserIP($browser_ip)
-	{
-		$this->data["browser_ip"] = $browser_ip;
-	}
 	
 	public function setEmail($email)
 	{
@@ -7386,66 +7068,6 @@ class MpiThreeDSAuthentication extends Transaction {
 	public function setRequestChallenge($request_challenge)
 	{
 		$this->data["request_challenge"] = $request_challenge;
-	}
-
-	public function setMessageCategory($message_category)
-	{
-		$this->data["message_category"] = $message_category;
-	}
-
-	public function setDeviceChannel($device_channel)
-	{
-		$this->data["device_channel"] = $device_channel;
-	}
-
-	public function setDecoupledRequestIndicator($decoupled_request_indicator)
-	{
-		$this->data["decoupled_request_indicator"] = $decoupled_request_indicator;
-	}
-
-	public function setDecoupledRequestMaxTime($decoupled_request_max_time)
-	{
-		$this->data["decoupled_request_max_time"] = $decoupled_request_max_time;
-	}
-
-	public function setDecoupledRequestAsyncUrl($decoupled_request_async_url)
-	{
-		$this->data["decoupled_request_async_url"] = $decoupled_request_async_url;
-	}
-
-	public function setRiIndicator($ri_indicator)
-	{
-		$this->data["ri_indicator"] = $ri_indicator;
-	}
-
-	public function setPriorAuthenticationInfo($priorAuthenticationInfo)
-	{
-		$this->data["prior_authentication_info"] = $priorAuthenticationInfo;
-	}
-
-	public function setRecurringExpiry($recurringExpiry)
-	{
-		$this->data["recurring_expiry"] = $recurringExpiry;
-	}
-
-	public function setRecurringFrequency($recurringFrequency)
-	{
-		$this->data["recurring_frequency"] = $recurringFrequency;
-	}
-
-	public function setWorkPhone($workPhone)
-	{
-		$this->data["work_phone"] = $workPhone;
-	}
-
-	public function setMobilePhone($mobilePhone)
-	{
-		$this->data["mobile_phone"] = $mobilePhone;
-	}
-
-	public function setHomePhone($homePhone)
-	{
-		$this->data["home_phone"] = $homePhone;
 	}
 }
 
@@ -7757,5 +7379,4 @@ class InstallmentResults {
 		return $this->PlanResponse;
 	}
 }
-
 ?>
